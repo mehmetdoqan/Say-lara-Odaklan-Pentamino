@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pentamino 35 Çözüm</title>
+  <style>
+    :root {
+      --bg: #0d1430;
+      --panel: rgba(255,255,255,.04);
+      --panel-border: #2d3a73;
+      --text: #eef2ff;
+      --muted: #b8c0e0;
+      --active: #4d81ff;
+      --inactive: #1c2750;
+      --shadow: 0 10px 30px rgba(0,0,0,.22);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, Arial, sans-serif;
+      background: linear-gradient(180deg, #09101d 0%, #0d1430 100%);
+      color: var(--text);
+    }
+
+    .app-shell {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .pieces-panel,
+    .viewer-card {
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border: 1px solid var(--panel-border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .pieces-sticky {
+      padding: 14px;
+      position: sticky;
+      top: 16px;
+    }
+
+    .pieces-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .pieces-column {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .piece-item {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 14px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .piece-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .mini-grid {
+      display: inline-grid;
+      gap: 2px;
+    }
+
+    .mini-cell {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      background: transparent;
+      opacity: .18;
+    }
+
+    .mini-cell.on {
+      opacity: 1;
+      outline: 1px solid rgba(255,255,255,.45);
+      outline-offset: -1px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.15);
+    }
+
+    .viewer-card {
+      padding: 14px;
+    }
+
+    .status {
+      min-height: 20px;
+      margin-bottom: 8px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .solution-card {
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px;
+      padding: 10px;
+    }
+
+    .image-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .solution-image {
+      width: 100%;
+      max-width: 560px;
+      max-height: 72vh;
+      display: block;
+      margin: 0 auto;
+      border-radius: 14px;
+      background: #fff;
+      border: 1px solid var(--panel-border);
+      object-fit: contain;
+    }
+
+    .number-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 16px;
+    }
+
+    .num-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      border: 1px solid var(--panel-border);
+      background: var(--inactive);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .num-btn.active {
+      background: var(--active);
+    }
+
+    .main-panel {
+      min-width: 0;
+    }
+
+    @media (max-width: 900px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .pieces-sticky {
+        position: static;
+      }
+
+      .pieces-column {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app-shell {
+        padding: 10px;
+        gap: 10px;
+      }
+
+      .pieces-title {
+        margin-bottom: 10px;
+      }
+
+      .pieces-column {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .piece-item {
+        padding: 8px;
+      }
+
+      .solution-image {
+        max-width: 100%;
+        max-height: 56vh;
+      }
+
+      .num-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="pieces-panel">
+      <div class="pieces-sticky">
+        <div class="pieces-title">Parçalar</div>
+        <div id="piecesColumn" class="pieces-column"></div>
+      </div>
+    </aside>
+
+    <main class="main-panel">
+      <section class="viewer-card">
+        <div id="status" class="status"></div>
+        <div id="solutionsGrid" class="solutions-grid"></div>
+        <div id="numberNav" class="number-nav"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const TOTAL_SOLUTIONS = 35;
+    const IMAGE_PATTERN = (n) => `cozum (${n}).png`;
+
+    const PIECES = [
+      { id: 'I', color: '#B9C19A', cells: [[0,0],[1,0],[2,0],[3,0],[4,0]] },
+      { id: 'Y', color: '#4B1FD3', cells: [[1,0],[0,1],[1,1],[1,2],[1,3]] },
+      { id: 'P', color: '#9A7420', cells: [[1,0],[2,0],[0,1],[1,1],[2,1]] },
+      { id: 'L', color: '#3E8A2C', cells: [[0,0],[1,0],[2,0],[3,0],[0,1]] },
+      { id: 'U', color: '#C9A457', cells: [[0,0],[1,0],[0,1],[0,2],[1,2]] },
+      { id: 'N', color: '#B12C63', cells: [[0,0],[1,0],[2,0],[2,1],[3,1]] },
+      { id: 'X', color: '#7B15A9', cells: [[1,0],[0,1],[1,1],[2,1],[1,2]] },
+    ];
+
+    const statusEl = document.getElementById('status');
+    const solutionsGrid = document.getElementById('solutionsGrid');
+    const numberNav = document.getElementById('numberNav');
+    const piecesColumn = document.getElementById('piecesColumn');
+
+    let currentSolution = 1;
+
+    function renderSelectedSolution() {
+      solutionsGrid.innerHTML = '';
+      const card = document.createElement('div');
+      card.className = 'solution-card';
+
+      const imgWrap = document.createElement('div');
+      imgWrap.className = 'image-wrap';
+
+      const img = document.createElement('img');
+      img.src = IMAGE_PATTERN(currentSolution);
+      img.alt = `Çözüm ${currentSolution}`;
+      img.className = 'solution-image';
+      img.onerror = () => {
+        statusEl.textContent = `${IMAGE_PATTERN(currentSolution)} bulunamadı.`;
+      };
+      img.onload = () => {
+        statusEl.textContent = '';
+      };
+
+      imgWrap.appendChild(img);
+      card.appendChild(imgWrap);
+      solutionsGrid.appendChild(card);
+    }
+
+    function renderNumberNav() {
+      numberNav.innerHTML = '';
+      for (let i = 1; i <= TOTAL_SOLUTIONS; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.className = `num-btn ${i === currentSolution ? 'active' : ''}`;
+        btn.addEventListener('click', () => {
+          currentSolution = i;
+          renderSelectedSolution();
+          renderNumberNav();
+        });
+        numberNav.appendChild(btn);
+      }
+    }
+
+    function renderMiniPiece(container, piece) {
+      const shape = piece.cells;
+      const maxX = Math.max(...shape.map(([x]) => x));
+      const maxY = Math.max(...shape.map(([, y]) => y));
+
+      const grid = document.createElement('div');
+      grid.className = 'mini-grid';
+      grid.style.gridTemplateColumns = `repeat(${maxX + 1}, 16px)`;
+
+      for (let y = 0; y <= maxY; y++) {
+        for (let x = 0; x <= maxX; x++) {
+          const cell = document.createElement('div');
+          const on = shape.some(([sx, sy]) => sx === x && sy === y);
+          cell.className = `mini-cell ${on ? 'on' : ''}`;
+          if (on) cell.style.background = piece.color;
+          grid.appendChild(cell);
+        }
+      }
+
+      container.appendChild(grid);
+    }
+
+    function renderPieces() {
+      piecesColumn.innerHTML = '';
+      PIECES.forEach(piece => {
+        const item = document.createElement('div');
+        item.className = 'piece-item';
+
+        const header = document.createElement('div');
+        header.style.display = 'flex';
+        header.style.alignItems = 'center';
+
+        const name = document.createElement('div');
+        name.className = 'piece-name';
+        name.textContent = piece.id;
+
+        header.appendChild(name);
+        item.appendChild(header);
+        renderMiniPiece(item, piece);
+        piecesColumn.appendChild(item);
+      });
+    }
+
+    renderPieces();
+    renderSelectedSolution();
+    renderNumberNav();
+  </script>
+</body>
+</html>
