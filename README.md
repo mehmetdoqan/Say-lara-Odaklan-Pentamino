@@ -31,8 +31,8 @@ cozum (2).png
 ...
 Site adresin:
 
-https://kullaniciadi.github.io/sayiya_odaklan_pentamino/
-💡 Notlar
+https://mehmetdoqan.github.io/Say-lara-Odaklan-Pentamino/
 
+💡 Notlar
 Büyük görseller otomatik ölçeklenir
 Mobilde parçalar üstte gösterilir
